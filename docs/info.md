@@ -6,18 +6,21 @@ sections.
 You can also include images in this folder and reference them in the markdown. Each image must be less than
 512 kb in size, and the combined size of all images must be less than 1 MB.
 -->
+# Bryan's UWASIC Onboarding Project
 
 ## How it works
 
-Hopefully I will be able to answer this by the end of the onboarding.
+The project can be controlled by an SPI controller,
+and its pin map are as follows:
+
+- `ui_in[1]` goes to `COPI` (Controller Out, Peripheral In)
+- `ui_in[2]` goes to `nCS` (Chip Select)
+- `ui_in[0]` goes to `SCLK` (Serial Clock)
 
 ## How to test
 
-Explain how to use your project
-*The project hasn't been released yet, so it also can't be tested :/*
+The `cocotb` python module is used to test all chip components in this project.
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
-
-*None that I know of.*
+None that I know of. Everything here is done via software.
