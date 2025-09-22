@@ -5,7 +5,10 @@
 
 `default_nettype none
 
-module tt_um_example (
+module tt_um_uwasic_onboarding_bryan_ma(
+    assign uio_oe = 8'hFF; // Set all IOs to output
+
+
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path
@@ -21,7 +24,26 @@ module tt_um_example (
   assign uio_out = 0;
   assign uio_oe  = 0;
 
+  // Create wires to refer to the values of the registers
+  wire [7:0] en_reg_out_7_0;
+  wire [7:0] en_reg_out_15_8;
+  wire [7:0] en_reg_pwm_7_0;
+  wire [7:0] en_reg_pwn_15_8;
+  wire [7:0] pwn_duty_cycle;
+
+  // Instantiate the PWM module
+  pwm_peripheral pwm_peripheral_inst (
+      .clk(clk),
+      .rst_n(rst_n),
+      .en_reg_out_7_0(en_reg_out_7_0),
+      .en_reg_out_15_8(en_reg_out_15_8),
+      .en_reg_pwm_7_0(en_reg_pwm_7_0),
+      .en_reg_pwm_15_8(en_reg_pwm_15_8),
+      .pwm_duty_cycle(pwm_duty_cycle),
+      .out({uio_out, uo_out})
+  );
+
   // List all unused inputs to prevent warnings
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+  wire _unused = &{ena, uio_in, ui_in[7:3], clk, rst_n, 1'b0};
 
 endmodule
