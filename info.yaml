@@ -1,12 +1,20 @@
 # info.yaml  
-title: "ASIC Onboarding Project - Bryan Ma"  
-author: "Bryan Ma"  
-description: "SPI-controlled PWM peripheral for Tiny Tapeout."  
-top_module: "tt_um_uwasic_onboarding_bryan_ma"  # Match your top module name  
-source_files:  
-  - "spi peripheral"
-  - pwm_peripheral.v  
-  - project.v
+project:
+  title: "ASIC Onboarding Project - Bryan Ma"  
+  author: "Bryan Ma"  
+  discord: "bryan351018"
+  description: "SPI-controlled PWM peripheral for Tiny Tapeout."  
+  language: "Verilog"
+  clock_hz: 0 # Clock not applicable
+
+  tiles: "1x1" # design tile size
+
+  top_module: "tt_um_uwasic_onboarding_bryan_ma"  # Match your top module name  
+
+  source_files:  
+    - "spi peripheral"
+    - pwm_peripheral.v  
+    - project.v
 
 # NOT REQUIRED
 pinout:
