@@ -26,7 +26,7 @@ module tt_um_uwasic_onboarding_bryan_ma(
   wire [7:0] en_reg_out_15_8;
   wire [7:0] en_reg_pwm_7_0;
   wire [7:0] en_reg_pwm_15_8;
-  wire [7:0] pwn_duty_cycle;
+  wire [7:0] pwm_duty_cycle;
 
   // Instantiate the PWM module
   pwm_peripheral pwm_peripheral_inst (
