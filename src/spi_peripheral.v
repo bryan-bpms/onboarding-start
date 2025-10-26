@@ -67,11 +67,11 @@ module spi_peripheral (
     input wire SCLK, // Clock
     input wire rst_n, // Active-low reset signal
     // Output register values
-    output wire [7:0] en_reg_out_7_0,
-    output wire [7:0] en_reg_out_15_8,
-    output wire [7:0] en_reg_pwm_7_0,
-    output wire [7:0] en_reg_pwm_15_8,
-    output wire [7:0] pwm_duty_cycle
+    output reg [7:0] en_reg_out_7_0,
+    output reg [7:0] en_reg_out_15_8,
+    output reg [7:0] en_reg_pwm_7_0,
+    output reg [7:0] en_reg_pwm_15_8,
+    output reg [7:0] pwm_duty_cycle
 );
     // Connect synchronizers to main clock. But where is the main clock?
 
