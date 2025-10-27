@@ -1,7 +1,0 @@
-{
-  "verilog.linting.linter": "verilator",
-  "verilog.formatting.verilogHDL.formatter": "verible-verilog-format",
-  "cSpell.words": [
-    "endmodule"
-  ]
-}
