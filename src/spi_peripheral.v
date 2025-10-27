@@ -101,6 +101,8 @@ module shift_reg (
         else begin
             // Clear shift register on reset
             out <= 16'b0;
+            // Clear ready bit
+            ready <= 1'b0;
         end
     end
 endmodule
@@ -128,16 +130,16 @@ module reg_controller (
 
     // Create a bus on the data byte
     wire [7:0] w_data;
-    assign w_data = command[15:8];
+    assign w_data = command[7:0];
 
     // Trigger when ready or reset
     always @(posedge ready or negedge rst_n) begin
         // If not being reset
         if (rst_n) begin
             // If the R/W bit is "write"
-            if (command[0]) begin
+            if (command[15]) begin
                 // Split cases based on address
-                case (command[7:1])
+                case (command[14:8])
                     7'h00: en_reg_out_7_0 <= w_data;
                     7'h01: en_reg_out_15_8 <= w_data;
                     7'h02: en_reg_pwm_7_0 <= w_data;
@@ -157,19 +159,6 @@ module reg_controller (
             pwm_duty_cycle <= 8'b0;
         end
     end
-endmodule
-
-// Vector inverter
-module vec_inverter (
-    input wire [15:0] vec,
-    output wire [15:0] vec_inv
-);
-    generate
-        genvar i;
-        for (i = 0; i <= 15; i = i + 1) begin: gen_inverts
-            assign vec_inv[i] = vec[15 - i];
-        end
-    endgenerate
 endmodule
 
 // SPI peripheral
@@ -228,16 +217,9 @@ module spi_peripheral (
         .ready(ready)
     );
 
-    // Connect vector inverter to switch orientation of data bits
-    wire [15:0] data_inv;
-    vec_inverter inv (
-        .vec(data),
-        .vec_inv(data_inv)
-    );
-
     // Connect register controller
     reg_controller regc (
-        .command(data_inv),
+        .command(data),
         .ready(ready),
         .rst_n(rst_n),
         .en_reg_out_7_0(en_reg_out_7_0),
