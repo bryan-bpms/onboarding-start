@@ -36,8 +36,8 @@ endmodule
 
 // n-bit Synchronizer
 module sync_n #(
-    parameter integer SYNC_LENGTH = 3,
-    parameter integer N = 8
+    parameter integer SYNC_LENGTH = 2,
+    parameter integer N = 1
 ) (
     input  wire [N-1:0] d, // Data in
     input  wire clk, // Clock
@@ -59,24 +59,171 @@ module sync_n #(
 
 endmodule
 
+// 16-bit shift register
+module shift_reg (
+    input wire in, // Input bit
+    input wire sclk, // SPI serial clock input
+    input wire cs, // Chip select input. Only shifts when it is LOW
+    input wire rst_n, // Reset line
+    output reg [15:0] out, // Output is always 8-bit MSB first, for convenience
+    output reg ready // HIGH when the output is ready to be read.
+    // After you read data from it, remember to set `ready` to LOW.
+);
+    reg [3:0] count = 4'b0; // Current clock count
+
+    always @(posedge sclk or negedge rst_n) begin
+        // If the shift register is not being reset
+        if (rst_n) begin
+            // If the chip select line is LOW
+            if (!cs) begin
+                // Shift bits 0-14 to 1-15
+                integer i;
+                for (i = 0; i <= 14; i = i + 1) begin
+                    out[i+1] <= out[i];
+                end
+                // Shift new bit into reg
+                out[0] <= in;
+
+                // If the current count (before incrementing) is 15, schedule `ready` to turn on
+                if (count == 4'd15) begin
+                    ready <= 1'b1;
+                end
+                // Otherwise, the output is not ready
+                else begin
+                    ready <= 1'b0;
+                end
+
+                // Advance clock count
+                count <= count + 1;
+            end
+        end
+        else begin
+            // Clear shift register on reset
+            out <= 16'b0;
+        end
+    end
+endmodule
+
+// Register controller
+module reg_controller (
+    // Command bits (obtained from shift register)
+    input wire [15:0] command,
+    // Ready bit in
+    input wire ready,
+    // Reset line
+    input wire rst_n,
+    // Output register values
+    output reg [7:0] en_reg_out_7_0 = 0, // output enables for uo_out[7:0]. Address: 0x00
+    output reg [7:0] en_reg_out_15_8 = 0, // output enables for uio_out[7:0]. Address: 0x01
+    output reg [7:0] en_reg_pwm_7_0 = 0, // pwm enables for uo_out[7:0]. Address: 0x02
+    output reg [7:0] en_reg_pwm_15_8 = 0, // pwm enables for uio_out[7:0]. Address: 0x03
+    output reg [7:0] pwm_duty_cycle = 0 // PWM duty cycle (0x00=0%, 0xFF=100%). Address: 0x04
+);
+    /*
+        bit 0: read/write bit. SPI module only reacts when this is 1
+        bits 2-8: register address to edit.
+        bits 9-15: new value for register
+    */
+
+    // Create a bus on the data byte
+    wire w_data;
+    assign w_data = command[15:8];
+
+    // Trigger when ready or reset
+    always @(posedge ready or negedge rst_n) begin
+        // If not being reset
+        if (rst_n) begin
+            // If the R/W bit is "write"
+            if (command[0]) begin
+                // Split cases based on address
+                case (command[7:1])
+                    7'h00: en_reg_out_7_0 <= w_data;
+                    7'h01: en_reg_out_15_8 <= w_data;
+                    7'h02: en_reg_pwm_7_0 <= w_data;
+                    7'h03: en_reg_pwm_15_8 <= w_data;
+                    7'h04: pwm_duty_cycle <= w_data;
+                    default:; // No default action
+                endcase
+            end
+        end
+        // If being reset
+        else begin
+            // Reset registers
+            en_reg_out_7_0 <= 8'b0;
+            en_reg_out_15_8 <= 8'b0;
+            en_reg_pwm_7_0 <= 8'b0;
+            en_reg_pwm_15_8 <= 8'b0;
+            pwm_duty_cycle <= 8'b0;
+        end
+    end
+endmodule
+
 // SPI peripheral
 module spi_peripheral (
     // SPI interface
-    input wire COPI, // Receives instructions
-    input wire nCS, // Chip select. Module only reacts when HIGH
-    input wire SCLK, // Clock
+    input wire copi, // Receives instructions
+    input wire ncs, // Chip select. Module only reacts when HIGH
+    input wire sclk, // SPI clock
+    input wire clk, // System clock
     input wire rst_n, // Active-low reset signal
     // Output register values
-    output reg [7:0] en_reg_out_7_0,
-    output reg [7:0] en_reg_out_15_8,
-    output reg [7:0] en_reg_pwm_7_0,
-    output reg [7:0] en_reg_pwm_15_8,
-    output reg [7:0] pwm_duty_cycle
+    output wire [7:0] en_reg_out_7_0, // output enables for uo_out[7:0]. Address: 0x00
+    output wire [7:0] en_reg_out_15_8, // output enables for uio_out[7:0]. Address: 0x01
+    output wire [7:0] en_reg_pwm_7_0, // pwm enables for uo_out[7:0]. Address: 0x02
+    output wire [7:0] en_reg_pwm_15_8, // pwm enables for uio_out[7:0]. Address: 0x03
+    output wire [7:0] pwm_duty_cycle // PWM duty cycle (0x00=0%, 0xFF=100%). Address: 0x04
 );
-    // Connect synchronizers to main clock. But where is the main clock?
+    // Create wires for synced signals
+    wire copi_s; // COPI
+    wire ncs_s; // nCS
+    wire sclk_s; // SPI clock
 
-    // Sample data on every rising clock edge
-    always @(posedge SCLK) begin
+    // Synchronize SPI inputs using the system clock
+    sync_n copi_sync (
+        .d(copi),
+        .clk(clk),
+        .rst_n(rst_n),
+        .q(copi_s)
+    );
+    sync_n ncs_sync (
+        .d(ncs),
+        .clk(clk),
+        .rst_n(rst_n),
+        .q(ncs_s)
+    );
+    sync_n sclk_sync (
+        .d(sclk),
+        .clk(clk),
+        .rst_n(rst_n),
+        .q(sclk_s)
+    );
 
-    end
+    // Parallel bit registers
+    reg [15:0] data;
+
+    // Parallel data ready wire
+    wire ready;
+
+    // Connect shift register to read data
+    shift_reg sreg (
+        .in(copi_s),
+        .sclk(sclks_s),
+        .cs(ncs_s),
+        .rst_n(rst_n),
+        .out(data),
+        .ready(ready)
+    );
+
+    // Connect register controller
+    reg_controller regc (
+        .command(data[0:15]), // Need to flip orientation of data stream
+        .ready(ready),
+        .rst_n(rst_n),
+        .en_reg_out_7_0(en_reg_out_7_0),
+        .en_reg_out_15_8(en_reg_out_15_8),
+        .en_reg_pwm_7_0(en_reg_pwm_7_0),
+        .en_reg_pwm_15_8(en_reg_pwm_15_8),
+        .pwm_duty_cycle(pwm_duty_cycle)
+    );
+
 endmodule
