@@ -1,3 +1,4 @@
+`default_nettype none
 // 1-bit Synchronizer
 module sync #(
     parameter integer SYNC_LENGTH = 2
@@ -45,8 +46,8 @@ module sync_n #(
     output wire [N-1:0] q // Data out
 );
     // Use a `generate` block to connect synchronizers
-    genvar i;
     generate
+        genvar i;
         for (i = 0; i < N; i = i + 1) begin : gen_syncs
             sync #(.SYNC_LENGTH(SYNC_LENGTH)) sn (
                 .d(d[i]),
@@ -126,7 +127,7 @@ module reg_controller (
     */
 
     // Create a bus on the data byte
-    wire w_data;
+    wire [7:0] w_data;
     assign w_data = command[15:8];
 
     // Trigger when ready or reset
@@ -156,6 +157,19 @@ module reg_controller (
             pwm_duty_cycle <= 8'b0;
         end
     end
+endmodule
+
+// Vector inverter
+module vec_inverter (
+    input wire [15:0] vec,
+    output wire [15:0] vec_inv
+);
+    generate
+        genvar i;
+        for (i = 0; i <= 15; i = i + 1) begin: gen_inverts
+            assign vec_inv[i] = vec[15 - i];
+        end
+    endgenerate
 endmodule
 
 // SPI peripheral
@@ -207,16 +221,23 @@ module spi_peripheral (
     // Connect shift register to read data
     shift_reg sreg (
         .in(copi_s),
-        .sclk(sclks_s),
+        .sclk(sclk_s),
         .cs(ncs_s),
         .rst_n(rst_n),
         .out(data),
         .ready(ready)
     );
 
+    // Connect vector inverter to switch orientation of data bits
+    wire [15:0] data_inv;
+    vec_inverter inv (
+        .vec(data),
+        .vec_inv(data_inv)
+    );
+
     // Connect register controller
     reg_controller regc (
-        .command(data[0:15]), // Need to flip orientation of data stream
+        .command(data_inv),
         .ready(ready),
         .rst_n(rst_n),
         .en_reg_out_7_0(en_reg_out_7_0),
