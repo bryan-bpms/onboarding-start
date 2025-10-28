@@ -70,20 +70,15 @@ module shift_reg (
     output reg ready // HIGH when the output is ready to be read.
     // After you read data from it, remember to set `ready` to LOW.
 );
-    reg [3:0] count = 4'b0; // Current clock count
+    reg [3:0] count; // Current clock count
 
     always @(posedge sclk or negedge rst_n) begin
         // If the shift register is not being reset
         if (rst_n) begin
             // If the chip select line is LOW
             if (!cs) begin
-                // Shift bits 0-14 to 1-15
-                integer i;
-                for (i = 0; i <= 14; i = i + 1) begin
-                    out[i+1] <= out[i];
-                end
-                // Shift new bit into reg
-                out[0] <= in;
+                // Do the shift
+                out <= {out[14:0], in};
 
                 // If the current count (before incrementing) is 15, schedule `ready` to turn on
                 if (count == 4'd15) begin
@@ -103,6 +98,8 @@ module shift_reg (
             out <= 16'b0;
             // Clear ready bit
             ready <= 1'b0;
+            // Reset bit count
+            count <= 4'b0;
         end
     end
 endmodule
@@ -116,11 +113,11 @@ module reg_controller (
     // Reset line
     input wire rst_n,
     // Output register values
-    output reg [7:0] en_reg_out_7_0 = 0, // output enables for uo_out[7:0]. Address: 0x00
-    output reg [7:0] en_reg_out_15_8 = 0, // output enables for uio_out[7:0]. Address: 0x01
-    output reg [7:0] en_reg_pwm_7_0 = 0, // pwm enables for uo_out[7:0]. Address: 0x02
-    output reg [7:0] en_reg_pwm_15_8 = 0, // pwm enables for uio_out[7:0]. Address: 0x03
-    output reg [7:0] pwm_duty_cycle = 0 // PWM duty cycle (0x00=0%, 0xFF=100%). Address: 0x04
+    output reg [7:0] en_reg_out_7_0, // output enables for uo_out[7:0]. Address: 0x00
+    output reg [7:0] en_reg_out_15_8, // output enables for uio_out[7:0]. Address: 0x01
+    output reg [7:0] en_reg_pwm_7_0, // pwm enables for uo_out[7:0]. Address: 0x02
+    output reg [7:0] en_reg_pwm_15_8, // pwm enables for uio_out[7:0]. Address: 0x03
+    output reg [7:0] pwm_duty_cycle // PWM duty cycle (0x00=0%, 0xFF=100%). Address: 0x04
 );
     /*
         bit 0: read/write bit. SPI module only reacts when this is 1
