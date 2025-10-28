@@ -17,11 +17,7 @@ module sync #(
         // Check if reset line is HIGH (i.e. not being reset)
         if (rst_n) begin
             // Advance the chain
-            chain[0] <= d;
-            for (i = 0; i < SYNC_LENGTH - 1; i = i + 1) begin
-            // This is a clocked circuit; non-blocking assignment used
-            chain[i+1] <= chain[i];
-            end
+            chain <= {chain[SYNC_LENGTH-2 : 0], d};
         end
         // Otherwise (i.e. reset line is LOW; synchronizer resets)
         else begin
