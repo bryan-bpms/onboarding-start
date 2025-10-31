@@ -42,8 +42,8 @@ module sync_n #(
     output wire [N-1:0] q // Data out
 );
     // Use a `generate` block to connect synchronizers
+    genvar i;
     generate
-        genvar i;
         for (i = 0; i < N; i = i + 1) begin : gen_syncs
             sync #(.SYNC_LENGTH(SYNC_LENGTH)) sn (
                 .d(d[i]),
