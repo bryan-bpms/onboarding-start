@@ -12,7 +12,6 @@ module sync #(
     reg [SYNC_LENGTH-1:0] chain;
 
     // On clock rising edge
-    integer i;
     always @(posedge clk or negedge rst_n) begin
         // Check if reset line is HIGH (i.e. not being reset)
         if (rst_n) begin
@@ -56,6 +55,35 @@ module sync_n #(
 
 endmodule
 
+// Rising edge detector
+module rise_trigger (
+    input wire in, // Input to detect edge of
+    input wire clk, // System clock input
+    input wire rst_n, // Reset line
+    output reg s_edge // Whether a positive edge occurred on the SPI clock line
+);
+    // Previous SPI clock level
+    reg prev;
+
+    // On every system clock edge or LOW reset line
+    always @(posedge clk or negedge rst_n) begin
+        // If not being reset
+        if (rst_n) begin
+            // Update the output depending on whether a rising edge occurred
+            // i.e. prev = 0, curr = 1
+            s_edge <= ~prev & in;
+        end
+        // If being reset
+        else begin
+            // Set initial value for output reg
+            s_edge <= 0;
+        end
+
+        // Update previous state reg regardless of case
+        prev <= in;
+    end
+endmodule
+
 // 16-bit shift register
 module shift_reg (
     input wire in, // Input bit
@@ -68,11 +96,22 @@ module shift_reg (
 );
     reg [3:0] count; // Current clock count
 
-    always @(posedge sclk or negedge rst_n) begin
+    // Wire for sclk rising edge detection output
+    wire sclk_edge;
+
+    // Connect rise trigger
+    rise_trigger rt_sclk (
+        .in(sclk),
+        .clk(clk),
+        .rst_n(rst_n),
+        .s_edge(sclk_edge)
+    );
+
+    always @(posedge clk or negedge rst_n) begin
         // If the shift register is not being reset
         if (rst_n) begin
-            // If the chip select line is LOW
-            if (!cs) begin
+            // If the chip select line is LOW AND a sclk rising edge has been detected
+            if (!cs & sclk_edge) begin
                 // Do the shift
                 out <= {out[14:0], in};
 
@@ -121,16 +160,26 @@ module reg_controller (
         bits 9-15: new value for register
     */
 
+    // Wire for rising edge output for `ready`
+    wire ready_edge;
+    // Connect rise trigger
+    rise_trigger rt_ready (
+        .in(ready),
+        .clk(clk),
+        .rst_n(rst_n),
+        .s_edge(ready_edge)
+    );
+
     // Create a bus on the data byte
     wire [7:0] w_data;
     assign w_data = command[7:0];
 
-    // Trigger when ready or reset
-    always @(posedge ready or negedge rst_n) begin
+    // Trigger when clock or reset
+    always @(posedge clk or negedge rst_n) begin
         // If not being reset
         if (rst_n) begin
-            // If the R/W bit is "write"
-            if (command[15]) begin
+            // If the R/W bit is "write" AND a rising edge has been detected in `ready`
+            if (command[15] & ready_edge) begin
                 // Split cases based on address
                 case (command[14:8])
                     7'h00: en_reg_out_7_0 <= w_data;
