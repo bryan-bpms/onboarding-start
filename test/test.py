@@ -152,7 +152,24 @@ async def test_spi(dut):
 
 @cocotb.test
 async def test_pwm_freq(dut):
-    # p7 task
+    dut._log.info("Start PWM Frequency test")
+    # Set the clock period to 100 ns (10 MHz)
+    clock = Clock(dut.clk, 100, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.ena.value = 1
+    ncs = 1
+    bit = 0
+    sclk = 0
+    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 5)
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 5)
+
+    dut._log.info("Test project behavior")
     # 1. Measure the time between two rising edges (i.e. period)
     # 1a. Enable outputs on uo_out[7:0], message (1, 0x00, 0xFF)
     await send_spi_transaction(dut, 1, 0x00, 0xFF)
