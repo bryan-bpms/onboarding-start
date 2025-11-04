@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import cocotb
+from cocotb.utils import get_sim_time
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
 from cocotb.triggers import ClockCycles
@@ -10,11 +11,11 @@ from cocotb.types import LogicArray
 
 async def await_half_sclk(dut):
     """Wait for the SCLK signal to go high or low."""
-    start_time = cocotb.utils.get_sim_time(units="ns")
+    start_time = get_sim_time(units="ns")
     while True:
         await ClockCycles(dut.clk, 1)
         # Wait for half of the SCLK period (10 us)
-        if (start_time + 100*100*0.5) < cocotb.utils.get_sim_time(units="ns"):
+        if (start_time + 100*100*0.5) < get_sim_time(units="ns"):
             break
     return
 
@@ -83,7 +84,7 @@ async def send_spi_transaction(dut, r_w, address, data):
     await ClockCycles(dut.clk, 600)
     return ui_in_logicarray(ncs, bit, sclk)
 
-@cocotb.test()
+@cocotb.test
 async def test_spi(dut):
     dut._log.info("Start SPI test")
 
@@ -149,7 +150,7 @@ async def test_spi(dut):
 
     dut._log.info("SPI test completed successfully")
 
-@cocotb.test()
+@cocotb.test
 async def test_pwm_freq(dut):
     # p7 task
     # 1. Measure the time between two rising edges (i.e. period)
@@ -180,7 +181,7 @@ async def test_pwm_freq(dut):
     dut._log.info("PWM Frequency test completed successfully")
 
 
-@cocotb.test()
+@cocotb.test
 async def test_pwm_duty(dut):
     # p7 task
     dut._log.info("PWM Duty Cycle test completed successfully")
