@@ -89,6 +89,7 @@ module shift_reg (
     input wire in, // Input bit
     input wire sclk, // SPI serial clock input
     input wire cs, // Chip select input. Only shifts when it is LOW
+    input wire clk, // System clock input
     input wire rst_n, // Reset line
     output reg [15:0] out, // Output is always 8-bit MSB first, for convenience
     output reg ready // HIGH when the output is ready to be read.
@@ -145,6 +146,8 @@ module reg_controller (
     input wire [15:0] command,
     // Ready bit in
     input wire ready,
+    // System clock line
+    input wire clk,
     // Reset line
     input wire rst_n,
     // Output register values
@@ -254,6 +257,7 @@ module spi_peripheral (
         .in(copi_s),
         .sclk(sclk_s),
         .cs(ncs_s),
+        .clk(clk),
         .rst_n(rst_n),
         .out(data),
         .ready(ready)
@@ -263,6 +267,7 @@ module spi_peripheral (
     reg_controller regc (
         .command(data),
         .ready(ready),
+        .clk(clk),
         .rst_n(rst_n),
         .en_reg_out_7_0(en_reg_out_7_0),
         .en_reg_out_15_8(en_reg_out_15_8),
