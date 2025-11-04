@@ -72,15 +72,19 @@ module rise_trigger (
             // Update the output depending on whether a rising edge occurred
             // i.e. prev = 0, curr = 1
             s_edge <= ~prev & in;
+
+            // Update previous state reg
+            prev <= in;
         end
         // If being reset
         else begin
             // Set initial value for output reg
             s_edge <= 0;
+            // Set constant initial value for `prev` reg
+            // since `gds` is unhappy if resets don't set `reg`s to constants
+            prev <= 1;
         end
 
-        // Update previous state reg regardless of case
-        prev <= in;
     end
 endmodule
 
