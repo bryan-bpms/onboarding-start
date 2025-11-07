@@ -177,7 +177,7 @@ async def test_pwm_freq(dut):
     await send_spi_transaction(dut, 1, 0x02, 0xFF)
 
     # 1c. Wait for the next PWM rising edge on uo_out[0]
-    await RisingEdge(dut.uo_out[0].value)
+    await RisingEdge(dut.uo_out.value[0])
     # 1d. Get the current sim time
     t_rising_edge1 = get_sim_time(unit='ms')
 
