@@ -224,8 +224,7 @@ async def test_pwm_duty(dut):
     await send_spi_transaction(dut, 1, 0x02, 0xFF)
     
     # TEMP:
-    print(dut, type(dut))
-    print(dut.uo_out, type(dut.uo_out))
-    print(dut.uo_out[0], type(dut.uo_out[0]))
+    print("dut.uo_out.value", dut.uo_out.value, type(dut.uo_out.value))
+    print("dut.uo_out[0].value", dut.uo_out[0].value, type(dut.uo_out[0].value))
 
     dut._log.info("PWM Duty Cycle test completed successfully")
