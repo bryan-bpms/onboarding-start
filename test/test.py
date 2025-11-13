@@ -206,8 +206,8 @@ async def test_pwm_freq(dut):
     await send_spi_transaction(dut, 1, 0x00, 0xFF)
     # 1b. Enable PWM on all these outputs, message (1, 0x02, 0xFF)
     await send_spi_transaction(dut, 1, 0x02, 0xFF)
-    # 1c. Set PWM duty to 100%
-    await send_spi_transaction(dut, 1, 0x04, 0xFF)
+    # 1c. Set PWM duty to 50%
+    await send_spi_transaction(dut, 1, 0x04, 0x7F)
 
     dut._log.info("Measuring period")
     # 2. Wait for the next PWM rising edge on uo_out[0]
