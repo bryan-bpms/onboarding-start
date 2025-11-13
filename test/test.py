@@ -151,34 +151,21 @@ async def test_spi(dut):
     dut._log.info("SPI test completed successfully")
 
 async def next_pos_edge(dut):
-    dut._log.info("Waiting until next positive edge")
     """
     `dut`: the DUT
     `val`: the ModifiableObject to sense the positive edge
     """
-    # previous clock level
-    prev_lvl = bool(int(dut.uo_out.value[0]))
-    # current clock level
-    curr_lvl = bool(int(dut.uo_out.value[0])) 
+    dut._log.info("Waiting until next positive edge")
 
-    # Maximum iterations
-    MAX_ITERS = 10000
+    # Number of changes that need to be sensed
+    num_remaining = 1
 
-    # Current iteration count
-    count = 0
+    # If we are on a LOW level, we need to sense 2 changes
+    if not bool(dut.uo_out.value[0]):
+        num_remaining = 2
 
-    # Repeat when a rising edge has not been detected
-    while not (not prev_lvl and curr_lvl) and count < MAX_ITERS:
-        # Wait for a single clock cycle
-        await ClockCycles(dut.clk, 1)
-        # Update previous level
-        prev_lvl = curr_lvl
-        # Get current level
-        curr_lvl = bool(int(dut.uo_out.value[0]))
-        # Increment watchdog counter
-        count += 1
-    
-    assert count < MAX_ITERS, f"Timed out while searching for positive edge. States: {(prev_lvl, curr_lvl)}"
+    for _ in range(num_remaining):
+        await dut.uo_out.value_change
 
 @cocotb.test
 async def test_pwm_freq(dut):
@@ -211,12 +198,12 @@ async def test_pwm_freq(dut):
 
     dut._log.info("Measuring period")
     # 2. Wait for the next PWM rising edge on uo_out[0]
-    await dut.uo_out.value_change
+    await next_pos_edge(dut)
     # Get the current sim time
     t_rising_edge1 = get_sim_time(unit='ms')
 
     # 3. Wait for the next PWM rising edge on uo_out[0]
-    await dut.uo_out.value_change
+    await next_pos_edge(dut)
     #  Get the current sim time
     t_rising_edge2 = get_sim_time(unit='ms')
 
