@@ -150,15 +150,15 @@ async def test_spi(dut):
 
     dut._log.info("SPI test completed successfully")
 
-async def next_pos_edge(dut, val):
+async def next_pos_edge(dut):
     """
     `dut`: the DUT
     `val`: the ModifiableObject to sense the positive edge
     """
     # previous clock level
-    prev_lvl = val 
+    prev_lvl = dut.uo_out.value[0] 
     # current clock level
-    curr_lvl = val
+    curr_lvl = dut.uo_out.value[0] 
 
     # Repeat when a rising edge has not been detected
     while not (not prev_lvl and curr_lvl):
@@ -167,7 +167,7 @@ async def next_pos_edge(dut, val):
         # Update previous level
         prev_lvl = curr_lvl
         # Get current level
-        curr_lvl = val 
+        curr_lvl = dut.uo_out.value[0] 
 
 @cocotb.test
 async def test_pwm_freq(dut):
@@ -196,12 +196,12 @@ async def test_pwm_freq(dut):
     await send_spi_transaction(dut, 1, 0x02, 0xFF)
 
     # 1c. Wait for the next PWM rising edge on uo_out[0]
-    await next_pos_edge(dut, dut.uo_out.value[0])
+    await next_pos_edge(dut)
     # 1d. Get the current sim time
     t_rising_edge1 = get_sim_time(unit='ms')
 
     # 1e. Wait for the next PWM rising edge on uo_out[0]
-    await next_pos_edge(dut, dut.uo_out.value[0])
+    await next_pos_edge(dut)
     # 1f. Get the current sim time
     t_rising_edge2 = get_sim_time(unit='ms')
 
