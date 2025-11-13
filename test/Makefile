@@ -6,6 +6,8 @@ SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
 PROJECT_SOURCES = project.v pwm_peripheral.v spi_peripheral.v
+# Try to re-enable wave output
+WAVES=1
 
 ifneq ($(GATES),yes)
 
