@@ -157,9 +157,9 @@ async def next_pos_edge(dut):
     `val`: the ModifiableObject to sense the positive edge
     """
     # previous clock level
-    prev_lvl = dut.uo_out.value[0] 
+    prev_lvl = bool(int(dut.uo_out.value[0]))
     # current clock level
-    curr_lvl = dut.uo_out.value[0] 
+    curr_lvl = bool(int(dut.uo_out.value[0])) 
 
     # Maximum iterations
     MAX_ITERS = 10000
@@ -174,7 +174,7 @@ async def next_pos_edge(dut):
         # Update previous level
         prev_lvl = curr_lvl
         # Get current level
-        curr_lvl = dut.uo_out.value[0]
+        curr_lvl = bool(int(dut.uo_out.value[0]))
         # Increment watchdog counter
         count += 1
     
