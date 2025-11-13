@@ -194,24 +194,26 @@ async def test_pwm_freq(dut):
     await send_spi_transaction(dut, 1, 0x00, 0xFF)
     # 1b. Enable PWM on all these outputs, message (1, 0x02, 0xFF)
     await send_spi_transaction(dut, 1, 0x02, 0xFF)
+    # 1c. Set PWM duty to 100%
+    await send_spi_transaction(dut, 1, 0x04, 0xFF)
 
-    # 1c. Wait for the next PWM rising edge on uo_out[0]
+    # 2. Wait for the next PWM rising edge on uo_out[0]
     await next_pos_edge(dut)
-    # 1d. Get the current sim time
+    #  Get the current sim time
     t_rising_edge1 = get_sim_time(unit='ms')
 
-    # 1e. Wait for the next PWM rising edge on uo_out[0]
+    # 3. Wait for the next PWM rising edge on uo_out[0]
     await next_pos_edge(dut)
-    # 1f. Get the current sim time
+    #  Get the current sim time
     t_rising_edge2 = get_sim_time(unit='ms')
 
-    # 1g. Compute period (ms)
+    # 4. Compute period (ms)
     period_ms = t_rising_edge2 - t_rising_edge1
 
-    # 1h. Compute frequency (kHz)
+    # 5. Compute frequency (kHz)
     f_khz = 1.0 / period_ms
 
-    # 2. Check that frequency is between 2970-3030 Hz
+    # 6. Check that frequency is between 2970-3030 Hz
     assert (f_khz >= 2.97 and f_khz <= 3.03), f"PWM frequency is measured to be {f_khz} KHz, which is outside the acceptable range of [2.97, 3.03] KHz."
 
     dut._log.info("PWM Frequency test completed successfully")
