@@ -212,13 +212,11 @@ async def test_pwm_freq(dut):
     dut._log.info("Measuring period")
     # 2. Wait for the next PWM rising edge on uo_out[0]
     await dut.uo_out.value_change
-    #await next_pos_edge(dut)
-    #  Get the current sim time
+    # Get the current sim time
     t_rising_edge1 = get_sim_time(unit='ms')
 
     # 3. Wait for the next PWM rising edge on uo_out[0]
     await dut.uo_out.value_change
-    #await next_pos_edge(dut)
     #  Get the current sim time
     t_rising_edge2 = get_sim_time(unit='ms')
 
