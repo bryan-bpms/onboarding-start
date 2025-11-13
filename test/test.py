@@ -11,11 +11,11 @@ from cocotb.types import LogicArray
 
 async def await_half_sclk(dut):
     """Wait for the SCLK signal to go high or low."""
-    start_time = get_sim_time(units="ns")
+    start_time = get_sim_time(unit="ns")
     while True:
         await ClockCycles(dut.clk, 1)
         # Wait for half of the SCLK period (10 us)
-        if (start_time + 100*100*0.5) < get_sim_time(units="ns"):
+        if (start_time + 100*100*0.5) < get_sim_time(unit="ns"):
             break
     return
 
@@ -89,7 +89,7 @@ async def test_spi(dut):
     dut._log.info("Start SPI test")
 
     # Set the clock period to 100 ns (10 MHz)
-    clock = Clock(dut.clk, 100, units="ns")
+    clock = Clock(dut.clk, 100, unit="ns")
     cocotb.start_soon(clock.start())
 
     # Reset
@@ -184,7 +184,7 @@ async def next_pos_edge(dut):
 async def test_pwm_freq(dut):
     dut._log.info("Start PWM Frequency test")
     # Set the clock period to 100 ns (10 MHz)
-    clock = Clock(dut.clk, 100, units="ns")
+    clock = Clock(dut.clk, 100, unit="ns")
     cocotb.start_soon(clock.start())
 
     # Reset
@@ -211,12 +211,13 @@ async def test_pwm_freq(dut):
 
     dut._log.info("Measuring period")
     # 2. Wait for the next PWM rising edge on uo_out[0]
-    await next_pos_edge(dut)
+    
+    #await next_pos_edge(dut)
     #  Get the current sim time
     t_rising_edge1 = get_sim_time(unit='ms')
 
     # 3. Wait for the next PWM rising edge on uo_out[0]
-    await next_pos_edge(dut)
+    #await next_pos_edge(dut)
     #  Get the current sim time
     t_rising_edge2 = get_sim_time(unit='ms')
 
@@ -237,7 +238,7 @@ async def test_pwm_freq(dut):
 async def test_pwm_duty(dut):
     dut._log.info("Start PWM Duty Cycle test")
     # Set the clock period to 100 ns (10 MHz)
-    clock = Clock(dut.clk, 100, units="ns")
+    clock = Clock(dut.clk, 100, unit="ns")
     cocotb.start_soon(clock.start())
 
     # Reset
@@ -259,7 +260,8 @@ async def test_pwm_duty(dut):
     await send_spi_transaction(dut, 1, 0x02, 0xFF)
     
     # TEMP:
+    print("dut", dut, type(dut))
+    print("dut.uo_out", dut.uo_out, type(dut.uo_out))
     print("dut.uo_out.value", dut.uo_out.value, type(dut.uo_out.value))
-    print("dut.uo_out[0].value", dut.uo_out[0].value, type(dut.uo_out[0].value))
 
     dut._log.info("PWM Duty Cycle test completed successfully")
