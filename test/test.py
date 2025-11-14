@@ -196,29 +196,41 @@ async def test_pwm_freq(dut):
     # 1c. Set PWM duty to 50%
     await send_spi_transaction(dut, 1, 0x04, 0x7F)
 
-    dut._log.info("Measuring period")
-    # 2. Wait for the next PWM rising edge on uo_out[0]
-    await next_pos_edge(dut)
-    # Get the current sim time
-    t_rising_edge1 = get_sim_time(unit='ms')
+    for i in range(10):
+        dut._log.info(f"Measuring period, iteration {i}")
+        # 2. Wait for the next PWM rising edge on uo_out[0]
+        await next_pos_edge(dut)
+        # Get the current sim time
+        t_rising_edge1 = get_sim_time(unit='ms')
 
-    # 3. Wait for the next PWM rising edge on uo_out[0]
-    await next_pos_edge(dut)
-    #  Get the current sim time
-    t_rising_edge2 = get_sim_time(unit='ms')
+        # 3. Wait for the next PWM rising edge on uo_out[0]
+        await next_pos_edge(dut)
+        #  Get the current sim time
+        t_rising_edge2 = get_sim_time(unit='ms')
 
-    dut._log.info("Computing frequency")
-    # 4. Compute period (ms)
-    period_ms = t_rising_edge2 - t_rising_edge1
+        dut._log.info("Computing frequency")
+        # 4. Compute period (ms)
+        period_ms = t_rising_edge2 - t_rising_edge1
 
-    # 5. Compute frequency (kHz)
-    f_khz = 1.0 / period_ms
+        # 5. Compute frequency (kHz)
+        f_khz = 1.0 / period_ms
 
-    # 6. Check that frequency is between 2970-3030 Hz
-    assert (f_khz >= 2.97 and f_khz <= 3.03), f"PWM frequency is measured to be {f_khz} KHz, which is outside the acceptable range of [2.97, 3.03] KHz."
+        # 6. Check that frequency is between 2970-3030 Hz
+        assert (f_khz >= 2.97 and f_khz <= 3.03), f"PWM frequency is measured to be {f_khz} KHz, which is outside the acceptable range of [2.97, 3.03] KHz."
 
     dut._log.info("PWM Frequency test completed successfully")
 
+async def test_hold(dut, value: Logic):
+    """
+    `dut`: the DUT
+    `value`: the logic value to test the hold for
+    """
+    ITERS = 3328
+    for i in range(ITERS):
+        # Assert PWM level
+        assert dut.uo_out.value[0] == value, f"Expected PWM signal to hold at {value}, but got {dut.uo_out.value[0]} at iteration {i}"
+        # Wait for 1 clock cycle
+        await ClockCycles(dut.clk, 1)
 
 @cocotb.test
 async def test_pwm_duty(dut):
@@ -244,9 +256,35 @@ async def test_pwm_duty(dut):
     await send_spi_transaction(dut, 1, 0x00, 0xFF)
     # 1b. Enable PWM on all these outputs, message (1, 0x02, 0xFF)
     await send_spi_transaction(dut, 1, 0x02, 0xFF)
-    
-    # TEMP:
-    print("dut", dut, type(dut))
-    print("dut.uo_out.value", dut.uo_out.value, type(dut.uo_out.value))
+
+    # Do tests 10 times
+    for i in range(10):
+        dut._log.info(f"Iteration {i}")
+        # 2. Test 0% duty
+        dut._log.info("Test 0% Duty")
+        await send_spi_transaction(dut, 1, 0x04, 0x00)
+        await test_hold(dut, Logic(False))
+
+        # 3. Test 50% duty
+        dut._log.info("Test 50% Duty")
+        await send_spi_transaction(dut, 1, 0x04, 0x7F)
+        # Locate a negative edge first
+        await next_pos_edge(dut)
+        await dut.uo_out.value_change
+        # Then measure
+        t_a = get_sim_time() # Starting step number
+        await dut.uo_out.value_change
+        t_m = get_sim_time() # Level change step number
+        await dut.uo_out.value_change
+        t_b = get_sim_time() # Ending step number
+        # Calculate duty cycle
+        duty = (t_b - t_m) / (t_b - t_a)
+        # Check if duty is within +/- 1% of 0.5
+        assert (duty >= 0.495 and duty <= 0.505), f"The calculated duty cycle is {duty}, which is outside +/- 1% of the expected value, 0.5"
+
+        # 4. Test 100% duty
+        dut._log.info("Test 100% Duty")
+        await send_spi_transaction(dut, 1, 0x04, 0xFF)
+        await test_hold(dut, Logic(True))
 
     dut._log.info("PWM Duty Cycle test completed successfully")
