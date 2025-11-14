@@ -155,7 +155,9 @@ async def next_edge(dut, pos_edge):
     `dut`: the DUT
     `pos_edge`: set to True to detect rising edges, and False to detect falling edges.
     """
-    while bool(dut.uo_out.value[0]) != pos_edge:
+    advance = (bool(dut.uo_out.value[0]) == pos_edge)
+    while (bool(dut.uo_out.value[0]) != pos_edge) or advance:
+        advance = False
         await dut.uo_out.value_change
 
 @cocotb.test
