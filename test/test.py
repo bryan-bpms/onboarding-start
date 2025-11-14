@@ -150,21 +150,12 @@ async def test_spi(dut):
 
     dut._log.info("SPI test completed successfully")
 
-async def next_pos_edge(dut):
+async def next_edge(dut, pos_edge):
     """
     `dut`: the DUT
-    `val`: the ModifiableObject to sense the positive edge
+    `pos_edge`: set to True to detect rising edges, and False to detect falling edges.
     """
-    dut._log.info("Waiting until next positive edge")
-
-    # Number of changes that need to be sensed
-    num_remaining = 1
-
-    # If we are on a LOW level, we need to sense 2 changes
-    if not bool(dut.uo_out.value[0]):
-        num_remaining = 2
-
-    for _ in range(num_remaining):
+    while bool(dut.uo_out.value[0]) != pos_edge:
         await dut.uo_out.value_change
 
 @cocotb.test
@@ -199,12 +190,12 @@ async def test_pwm_freq(dut):
     for i in range(10):
         dut._log.info(f"Measuring period, iteration {i}")
         # 2. Wait for the next PWM rising edge on uo_out[0]
-        await next_pos_edge(dut)
+        await next_edge(dut, True)
         # Get the current sim time
         t_rising_edge1 = get_sim_time(unit='ms')
 
         # 3. Wait for the next PWM rising edge on uo_out[0]
-        await next_pos_edge(dut)
+        await next_edge(dut, True)
         #  Get the current sim time
         t_rising_edge2 = get_sim_time(unit='ms')
 
@@ -269,13 +260,14 @@ async def test_pwm_duty(dut):
         dut._log.info("Test 50% Duty")
         await send_spi_transaction(dut, 1, 0x04, 0x7F)
         # Locate a negative edge first
-        await next_pos_edge(dut)
-        await dut.uo_out.value_change
+        await next_edge(dut, False)
         # Then measure
         t_a = get_sim_time() # Starting step number
-        await dut.uo_out.value_change
+        await next_edge(dut, True) # Locate rising edge
+
         t_m = get_sim_time() # Level change step number
-        await dut.uo_out.value_change
+        await next_edge(dut, False) # Locate falling edge
+
         t_b = get_sim_time() # Ending step number
         # Calculate duty cycle
         duty = (t_b - t_m) / (t_b - t_a)
